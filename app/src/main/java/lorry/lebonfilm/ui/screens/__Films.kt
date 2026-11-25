@@ -1,5 +1,9 @@
 package lorry.lebonfilm.ui.screens
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,6 +58,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import coil3.compose.AsyncImage
 import lorry.lebonfilm.MainActivity
 import lorry.lebonfilm._components.displayActor.DisplayedActor
@@ -60,12 +66,11 @@ import lorry.lebonfilm._repos.ActorFilmsManager
 import lorry.lebonfilm._repos.ActorFilmsResponse
 import lorry.lebonfilm._repos.CommonResponseBuilders
 import lorry.lebonfilm.colors
-import org.koin.android.ext.android.inject
 import org.koin.java.KoinJavaComponent.inject
-
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
 
 enum class SortType { ALPHABETICAL, POPULARITY }
 
@@ -121,7 +126,7 @@ fun MainActivity.FilmsScreen(
                     .fillMaxWidth()
                     .padding(top = 20.dp),
                 textAlign = TextAlign.Center,
-                fontSize = 25.sp
+                fontSize = 35.sp
             )
 
 
@@ -226,7 +231,7 @@ fun MainActivity.MovieZone(
 }
 
 @Composable
-fun MovieCard(
+fun MainActivity.MovieCard(
     modifier: Modifier = Modifier,
     movie: CommonResponseBuilders.Movie,
     sortType: SortType,
@@ -244,20 +249,47 @@ fun MovieCard(
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(end = 60.dp)
-                        .align(Alignment.CenterStart),
+                        .padding(end = 60.dp, top = 15.dp)
+                        .align(Alignment.TopCenter),
                     text = movie.title ?: "",
                     fontWeight = Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    fontSize = 25.sp
                 )
 
-                Text(
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    text = if (sortType == SortType.POPULARITY) "${movie.popularity}" else formatDateInFrench(
-                        movie.release_date
-                    ),
-                    fontSize = 10.sp
-                )
+                Row(
+                    modifier = Modifier.align(Alignment.TopEnd)
+
+                ) {
+                    Text(
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                        text = if (sortType == SortType.POPULARITY) movie.popularity?.let { "${if (it > 0) it.toInt() else it.toString().take(4)}%"} ?: "" else formatDateInFrench(
+                            movie.release_date
+                        )
+                    )
+                    IconButton(
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                        onClick = {
+                            try {
+                                val url = "https://www.nzbindex.com/search?q=${movie.title}&minsize=600&sort=agedesc&max=50"
+                                val myIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                startActivity(myIntent)
+                            } catch (e: ActivityNotFoundException) {
+                                Toast.makeText(
+                                    this@MovieCard, "No application can handle this request."
+                                            + " Please install a webbrowser", Toast.LENGTH_LONG
+                                ).show()
+                                e.printStackTrace()
+                            }
+
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Download"
+                        )
+                    }
+                }
             }
 
 
